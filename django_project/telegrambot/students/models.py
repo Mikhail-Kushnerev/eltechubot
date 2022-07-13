@@ -1,12 +1,6 @@
 from django.db import models
 
-
-class TimeBasedModel(models.Model):
-    class Meta:
-        abstract = True
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+from django_project.telegrambot.core.models import TimeBasedModel
 
 
 class Student(TimeBasedModel):
@@ -14,7 +8,10 @@ class Student(TimeBasedModel):
         unique=True,
         verbose_name="ID пользователя Telegram"
     )
-    username = models.CharField(max_length=250)
+    username = models.CharField(
+        max_length=250,
+        verbose_name="Nickname пользователя"
+    )
     first_name = models.CharField(
         max_length=150,
         null=True

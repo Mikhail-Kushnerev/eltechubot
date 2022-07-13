@@ -1,6 +1,6 @@
 from django.db import models
 
-from students.models import Student
+from django_project.telegrambot.students.models import Student
 
 
 IDZ = "Индивидуальное домашнее задание"
@@ -76,7 +76,7 @@ class Product(models.Model):
         related_name="products",
         verbose_name="вид работы"
     )
-    file = models.FileField(
+    doc = models.FileField(
         upload_to=user_directory_path,
     )
 

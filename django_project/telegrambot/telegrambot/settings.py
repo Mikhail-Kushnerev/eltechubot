@@ -1,14 +1,17 @@
 import os
+import sys
 
 from pathlib import Path
 
 from dotenv import load_dotenv
 
+# sys.path.append("D:/Dev/Final/eltechubot/django_project/telegrambot")
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+# load_dotenv()
 
-SECRET_KEY = os.getenv('SECRET_KEY', default='qwerty123456')
+SECRET_KEY = 'django-insecure-&=y94@iuwe-0mg23n587jc5*8b+a_bmn1w4wp+-051rghbn&9i'
 
 DEBUG = True
 
@@ -21,8 +24,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'students',
-    'unitems',
+    'django_project.telegrambot.core',
+    'django_project.telegrambot.students',
+    'django_project.telegrambot.unitems',
 ]
 
 MIDDLEWARE = [
@@ -35,7 +39,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'telegrambot.urls'
+ROOT_URLCONF = 'django_project.telegrambot.telegrambot.urls'
 
 TEMPLATES = [
     {
@@ -53,16 +57,16 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'telegrambot.wsgi.application'
+WSGI_APPLICATION = 'django_project.telegrambot.telegrambot.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('ENGINE', default='django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME', default='postgres'),
-        'USER': os.getenv('POSTGRES_USERNAME', default='postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='qwerty123456'),
-        'HOST': os.getenv('DB_HOST', default='localhost'),
-        'PORT': os.getenv('DB_PORT', default='5432'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tg_bot',
+        'USER': 'postgres',
+        'PASSWORD': 'Bear2013',
+        'HOST': 'localhost',
+        'PORT': 5432,
     }
 }
 

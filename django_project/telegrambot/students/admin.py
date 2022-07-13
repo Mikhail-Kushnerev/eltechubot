@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Student
+from django_project.telegrambot.students.models import Student
 
 
 @admin.register(Student)

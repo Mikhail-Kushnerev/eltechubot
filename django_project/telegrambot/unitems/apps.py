@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class UnitemsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'unitems'
+    name = 'django_project.telegrambot.unitems'
