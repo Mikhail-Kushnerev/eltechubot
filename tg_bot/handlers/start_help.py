@@ -68,8 +68,8 @@ async def continue_func(call):
 
 @dp.message_handler()
 async def start_shopping(message):
-    message = message.text.strip().upper()
-    target = await get_product((obj := message))
+    find_target = message.text.strip().upper()
+    target = await get_product((obj := find_target))
     if target:
         await get_to_cart(message, target=target, obj=obj)
     else:
@@ -91,8 +91,8 @@ async def get_to_cart(message, *args, **kwargs):
         )
     else:
         call = message
-        text = call.message.text.split()[2][:-1]
-        markup = await type_keyboard(text)
+        inline_text = call.message.text.split()[2][:-1]
+        markup = await type_keyboard(inline_text)
         await call.message.edit_text(call.message.text, reply_markup=markup)
 
 
