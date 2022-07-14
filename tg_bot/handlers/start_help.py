@@ -3,13 +3,14 @@ from aiogram.types import CallbackQuery
 from aiogram.utils.markdown import hbold
 from aiogram.dispatcher.filters import Text
 
+from tg_bot.keyboards.inline_keyboards.menu import type_keyboard, next_answ, menu_cd
 from tg_bot.keyboards.reply import menu
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
 from tg_bot.keyboards.inline_keyboards.inline import continue_keyboard, choice
 
 from loader import dp
 
-from tg_bot.services.db_api.db_commands import add_user, get_product
+from tg_bot.services.db_api.db_commands import add_user, get_product, get_item
 
 
 @dp.message_handler(commands=["start", "help"])
@@ -29,7 +30,7 @@ async def get_help(message):
                 " хватило на нестыдную шаву ~200-400 руб."
             )
         )
-    elif message.text.startswith("/s"):
+    elif message.text.startswith("/st"):
         user = await add_user(
             user_id=message.from_user.id,
             username=message.from_user.username,
@@ -38,9 +39,9 @@ async def get_help(message):
     await message.answer(text)
 
 
-@dp.message_handler(commands=["menu"])
-async def get_menu(message):
-    await message.answer("Боты должны работать", reply_markup=menu)
+# @dp.message_handler(commands=["menu"])
+# async def get_menu(message):
+#     await message.answer("Боты должны работать", reply_markup=menu)
 
 
 @dp.message_handler(Text(equals=("Выбор дисциплины",)))
@@ -59,37 +60,60 @@ async def add_item(call: CallbackQuery, callback_data):
     print(call.data, callback_data, sep="\n")
 
 
-@dp.callback_query_handler(text="continue")
+@dp.callback_query_handler(text="Контрольная работа")
 async def continue_func(call):
     await call.message.answer('q')
     print(call.data, sep="\n")
 
 
 @dp.message_handler()
-async def get_to_cart(message):
-    target = await get_product(message.text.upper())
+async def start_shopping(message):
+    message = message.text.strip().upper()
+    target = await get_product((obj := message))
     if target:
+        await get_to_cart(message, target=target, obj=obj)
+    else:
+        await message.answer(text="Нет такой")
+
+
+async def get_to_cart(message, *args, **kwargs):
+    if isinstance(message, types.Message):
+        markup = await type_keyboard(kwargs["obj"])
         await message.answer(
             text='\n'.join(
                 (
                     "Мои поздравление, мой друг. Такая есть",
-                    f" - {target['target'].name};",
-                    f" - {target['target'].lektor}.",
+                    f" - {kwargs['target']['target'].name};",
+                    f" - {kwargs['target']['target'].lektor}.",
                 )
             ),
-            reply_markup=choice
+            reply_markup=markup
         )
-        await message.answer_document(types.InputFile(target['file']))
-        # await dp.bot.send_document(
-        #     message.from_user.id,
-        #     document=target[1],
-        # )
     else:
-        await message.answer(text="Нет такой")
+        call = message
+        text = call.message.text.split()[2][:-1]
+        markup = await type_keyboard(text)
+        await call.message.edit_text(call.message.text, reply_markup=markup)
 
-# def register_handler(dp: Dispatcher):
-# dp.register_message_handler(get_help, commands=["start", "help"])
-# dp.register_message_handler(get_menu, commands=["menu"])
-# dp.register_message_handler(get_item, Text(equals=("Выбор дисциплины",)))
-# dp.register_message_handler(get_input)
-# dp.register_callback_query_handler(add_item, add_callback.filter(item_name="ss"))
+
+async def buy(callback: types.CallbackQuery, discipline, type_name):
+    markup = next_answ(discipline, type_name)
+    # await get_item(discipline, type_name)
+    print(callback)
+    await callback.message.edit_text(
+        f"Заказ:\n - {discipline};\n - {type_name}"
+    )
+    await callback.message.edit_reply_markup(markup)
+
+
+@dp.callback_query_handler(menu_cd.filter())
+async def navigation(call: types.CallbackQuery, callback_data):
+    current_lvl = callback_data.get("level")
+    discipline = callback_data.get("discipline")
+    ttypy = callback_data.get("type_name")
+    levels = {
+        "0": get_to_cart,
+        "1": buy,
+    }
+    current_lvl_f = levels[current_lvl]
+    await current_lvl_f(call, discipline, ttypy)
