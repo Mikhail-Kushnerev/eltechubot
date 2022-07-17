@@ -1,4 +1,7 @@
+import asyncio
+
 from aiogram import types
+from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.utils.markdown import hbold
 from aiogram.dispatcher.filters import Text
@@ -7,14 +10,18 @@ from tg_bot.keyboards.inline_keyboards.menu import type_keyboard, next_answ, men
 from tg_bot.keyboards.reply import menu
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
 from tg_bot.keyboards.inline_keyboards.inline import continue_keyboard, choice
+from tg_bot.misc.states import Test
+from tg_bot.misc.logger import logger
 
 from loader import dp
+from tg_bot.services.redis_db_cache import write_data, changer_data, dd, get_data
+from tg_bot.misc import rate_limit
+from tg_bot.services.db_api.db_commands import add_user, get_product
 
-from tg_bot.services.db_api.db_commands import add_user, get_product, get_item
 
-
+@rate_limit(limit=5, key="/start")
 @dp.message_handler(commands=["start", "help"])
-async def get_help(message):
+async def get_help(message: types.Message):
     if message.text.startswith("/h"):
         user = message.chat.username
         text = "\n".join(
@@ -30,6 +37,11 @@ async def get_help(message):
                 " хватило на нестыдную шаву ~200-400 руб."
             )
         )
+        logger.info(
+            'Польователь отправил команду help. Сообщение получено',
+            # f'{middleware_data}'
+        )
+        # logger.error('Польователь отправил команду help. Сообщение НЕ получено')
     elif message.text.startswith("/st"):
         user = await add_user(
             user_id=message.from_user.id,
@@ -39,45 +51,59 @@ async def get_help(message):
     await message.answer(text)
 
 
-# @dp.message_handler(commands=["menu"])
-# async def get_menu(message):
-#     await message.answer("Боты должны работать", reply_markup=menu)
-
-
 @dp.message_handler(Text(equals=("Выбор дисциплины",)))
 async def get_item(message):
     await message.answer("Введи интересующую тебя дисциплину. Возможно, она у меня есть")
 
 
 @dp.callback_query_handler(add_callback.filter(item_name="ss"))
-async def add_item(call: CallbackQuery, callback_data):
-    # await call.answer(cache_time=60)
-    quantity = callback_data.get("quantity")
-    await call.message.answer(
-        f"{quantity}",
-        reply_markup=continue_keyboard
-    )
-    print(call.data, callback_data, sep="\n")
+async def add_item(call: CallbackQuery, callback_data, state: FSMContext):
+    id_ = call.message.message_id - 1
+    try:
+        await dp.bot.edit_message_text(
+            text='Ждёт оплаты:\n'
+            f"{dd[id_][1]}",
+            chat_id=call.message.chat.id,
+            message_id=dd[id_][0][0],
+            reply_markup=continue_keyboard
+        )
+        await call.answer('Добавлено в корзину', )
+    except Exception:
+        await call.message.edit_text(
+            text="сломал бота, типичный ЛЭТИ'шник...\nПиши запрос заново :D",
+            reply_markup=""
+        )
 
 
-@dp.callback_query_handler(text="Контрольная работа")
-async def continue_func(call):
-    await call.message.answer('q')
-    print(call.data, sep="\n")
+@dp.message_handler(commands=["cart"])
+async def get_menu(message):
+
+    await message.answer("Боты должны работать", reply_markup=menu)
 
 
+@rate_limit(limit=5)
 @dp.message_handler()
 async def start_shopping(message):
     find_target = message.text.strip().upper()
     target = await get_product((obj := find_target))
     if target:
         await get_to_cart(message, target=target, obj=obj)
+        print("add_cart\n", message.message_id)
     else:
         await message.answer(text="Нет такой")
+    await asyncio.sleep(5)
 
 
 async def get_to_cart(message, *args, **kwargs):
     if isinstance(message, types.Message):
+        id_ = message.message_id
+        print(message, '\n', id_)
+        obj = (
+            id_,
+            [],
+            kwargs['target']["target"].name,
+        )
+        await write_data(obj)
         markup = await type_keyboard(kwargs["obj"])
         await message.answer(
             text='\n'.join(
@@ -93,17 +119,28 @@ async def get_to_cart(message, *args, **kwargs):
         call = message
         inline_text = call.message.text.split()[2][:-1]
         markup = await type_keyboard(inline_text)
-        await call.message.edit_text(call.message.text, reply_markup=markup)
+        await dp.bot.edit_message_text(
+            text=call.message.text,
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=markup
+        )
 
 
 async def buy(callback: types.CallbackQuery, discipline, type_name):
     markup = next_answ(discipline, type_name)
-    # await get_item(discipline, type_name)
-    print(callback)
+    id_ = callback.message.message_id
+    print(callback, '\n', id_)
+    await changer_data(id_)
     await callback.message.edit_text(
         f"Заказ:\n - {discipline};\n - {type_name}"
     )
-    await callback.message.edit_reply_markup(markup)
+    await dp.bot.edit_message_text(
+        text=f"Заказ:\n - {discipline};\n - {type_name}",
+        chat_id=callback.message.chat.id,
+        message_id=id_,
+        reply_markup=markup
+    )
 
 
 @dp.callback_query_handler(menu_cd.filter())

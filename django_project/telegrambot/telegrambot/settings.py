@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# load_dotenv()
+load_dotenv()
 
-SECRET_KEY = 'django-insecure-&=y94@iuwe-0mg23n587jc5*8b+a_bmn1w4wp+-051rghbn&9i'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = True
 
@@ -62,10 +62,10 @@ WSGI_APPLICATION = 'django_project.telegrambot.telegrambot.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tg_bot',
-        'USER': 'postgres',
-        'PASSWORD': 'Bear2013',
-        'HOST': 'localhost',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('POSTGRES_USERNAME'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
         'PORT': 5432,
     }
 }

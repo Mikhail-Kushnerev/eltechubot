@@ -30,7 +30,7 @@ choice = InlineKeyboardMarkup(
 
 continue_keyboard = InlineKeyboardMarkup()
 answer = InlineKeyboardButton(
-    text="Продолжить покупку?",
+    text="Удалить",
     callback_data="continue"
 )
 continue_keyboard.insert(answer)

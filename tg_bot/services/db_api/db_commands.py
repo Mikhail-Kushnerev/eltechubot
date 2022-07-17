@@ -6,8 +6,21 @@ from django_project.telegrambot.unitems.models import (
     Product,
     Purchace
 )
+from django_project.telegrambot.students.models import (
+    Student,
+)
 from django.shortcuts import get_object_or_404
 from asgiref.sync import sync_to_async
+
+
+
+@sync_to_async
+def get_student(user_id):
+    student = get_object_or_404(
+        Student,
+        id=user_id
+    )
+    return True if student else False
 
 
 @sync_to_async

@@ -52,12 +52,14 @@ def next_answ(discipline, type_name):
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Продолжить покупку?",
+                    text="Добавить в корзину",
                     callback_data=add_callback.new(
                         item_name="ss",
                         quantity=1
                     ),
                 ),
+            ],
+            [
                 InlineKeyboardButton(
                     text="Отменить выбор",
                     callback_data=make_callback_data(
@@ -67,12 +69,18 @@ def next_answ(discipline, type_name):
                     ),
                 )
             ],
-            [
-                InlineKeyboardButton(
-                    text="Оформить заказа",
-                    callback_data=buy_item.new(item_id='Купить'),
-                ),
-            ]
+            # [
+            #     InlineKeyboardButton(
+            #         text="Оформить заказа",
+            #         callback_data=buy_item.new(item_id='Купить'),
+            #     ),
+            # ]
         ]
     )
     return markup
+
+
+def cart():
+    markup = InlineKeyboardMarkup(
+
+    )
