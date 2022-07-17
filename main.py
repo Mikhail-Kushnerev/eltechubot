@@ -1,38 +1,5 @@
 import os
 
-from aiogram import Bot
-from aiogram import Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-
-from loader import dp
-from tg_bot.config import load_config, Config
-
-
-# def register_all_handlers(dp):
-#     register_handler(dp)
-
-
-# config: Config = load_config(".env")
-#
-# bot: Bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
-# storage: MemoryStorage = MemoryStorage()
-# dp: Dispatcher = Dispatcher(bot, storage=storage)
-# bot['config'] = config
-
-# register_all_handlers(dp)
-#
-# try:
-#     # setup_django()
-#     await dp.start_polling()
-# finally:
-#     await dp.storage.close()
-#     await dp.storage.wait_closed()
-#     await bot.session.close()
-
-
-# async def on_startup(dispatcher):
-#     await on_startup_notify
-
 
 def setup_django():
     os.environ.setdefault(
@@ -56,16 +23,9 @@ if __name__ == "__main__":
     except Exception:
         raise logger.error('проблемы с установкой Django')
 
-    # import redis, os
-    from dotenv import load_dotenv
-
     from aiogram import executor
     from tg_bot import middlewares
     from tg_bot.handlers import dp
-
-    # load_dotenv()
-
-    # print()
 
     try:
         logger.info('Бот работает')
@@ -77,6 +37,6 @@ if __name__ == "__main__":
         # print(redis_cli.set(name="test_key", value=10))
         middlewares.setup(dp)
         executor.start_polling(dp, skip_updates=True)
-    except Exception:
+    except Exception as error:
         # redis_cli.close()
-        raise logger.error('ПРОБЛЕМА! Бот остановлен')
+        raise logger.error(f'ПРОБЛЕМА {error=}! Бот остановлен')
