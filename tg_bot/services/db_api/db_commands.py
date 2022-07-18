@@ -83,3 +83,11 @@ def get_item(dis, type_name):
     )
     return target
     # types = Product.objects.filter(discipline__name=item.name)
+
+
+@sync_to_async
+def add_to_cart():
+
+    obj = Purchace(
+
+    ).save()

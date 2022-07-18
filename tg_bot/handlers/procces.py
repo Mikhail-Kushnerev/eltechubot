@@ -6,8 +6,8 @@ from tg_bot.keyboards.inline_keyboards.menu import (
     next_answ,
     menu_cd
 )
-from tg_bot.services.redis_db_cache import write_data, changer_data, dd
-from tg_bot.services.db_api.db_commands import get_product
+from tg_bot.services.redis_db_cache import write_data, changer_data, CACHE, get_data
+from tg_bot.services.db_api.db_commands import get_product, add_to_cart
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
 from tg_bot.keyboards.inline_keyboards.inline import continue_keyboard
 from loader import dp
@@ -17,14 +17,19 @@ from tg_bot.misc import rate_limit
 @dp.callback_query_handler(add_callback.filter(item_name="ss"))
 async def add_item(call: types.CallbackQuery, callback_data, state: FSMContext):
     id_ = call.message.message_id - 1
+    person = call.from_user.id
+    # print(call)
     try:
         await dp.bot.edit_message_text(
             text='Ждёт оплаты:\n'
-            f"{dd[id_][1]}",
+                 f"{CACHE[person][id_][1]} {call.message.text.split(' - ')[-1]}",
             chat_id=call.message.chat.id,
-            message_id=dd[id_][0][0],
+            message_id=CACHE[person][id_][0],
             reply_markup=continue_keyboard
         )
+        # await add_to_cart(
+        #
+        # )
         await call.answer('Добавлено в корзину', )
     except Exception:
         await call.message.edit_text(
@@ -37,9 +42,12 @@ async def get_to_cart(message, *args, **kwargs):
     if isinstance(message, types.Message):
         id_ = message.message_id
         print(message, '\n', id_)
+        user_id = message.from_id
+        print(user_id)
         obj = (
+            user_id,
             id_,
-            [],
+            0,
             kwargs['target']["target"].name,
         )
         await write_data(obj)
@@ -68,9 +76,13 @@ async def get_to_cart(message, *args, **kwargs):
 
 async def buy(callback: types.CallbackQuery, discipline, type_name):
     markup = next_answ(discipline, type_name)
+    person = callback.from_user.id
     id_ = callback.message.message_id
-    print(callback, '\n', id_)
-    await changer_data(id_)
+    print(callback, '\n', id_, person)
+    name = callback.data.split(":")[2]
+    q = await changer_data(id_, person, name)
+    # q = get_data()
+    print(q)
     await callback.message.edit_text(
         f"Заказ:\n - {discipline};\n - {type_name}"
     )
