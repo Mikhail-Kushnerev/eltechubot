@@ -86,8 +86,10 @@ def get_item(dis, type_name):
 
 
 @sync_to_async
-def add_to_cart():
-
+def add_to_cart(person, pk):
     obj = Purchace(
-
+        buyer_id=person,
+        item=pk,
+        amount=5,
     ).save()
+    return obj
