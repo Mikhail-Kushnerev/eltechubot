@@ -4,7 +4,8 @@ from django_project.telegrambot.students.models import Student
 from django_project.telegrambot.unitems.models import (
     Discipline,
     Product,
-    Purchace
+    Purchace,
+    ProductPurchase
 )
 from django_project.telegrambot.students.models import (
     Student,
@@ -67,11 +68,7 @@ def get_types(name):
         name=name.upper()
     )
     types = Product.objects.filter(discipline__name=item.name)
-    context = {
-        "name": name,
-        "types": types
-    }
-    return context
+    return types
 
 
 @sync_to_async
@@ -86,10 +83,19 @@ def get_item(dis, type_name):
 
 
 @sync_to_async
-def add_to_cart(person, pk):
-    obj = Purchace(
+def add_to_cart(person, name):
+    obj = Purchace.objects.create(
         buyer_id=person,
-        item=pk,
-        amount=5,
+        # item=pk,
+        # amount=5,
     ).save()
+    product = get_object_or_404(
+        Product,
+        name=name
+    )
+    target = get_item(product)
+    products = ProductPurchase.objects.create(
+        purchase=obj.id,
+        product=target
+    )
     return obj

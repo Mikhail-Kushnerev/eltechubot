@@ -5,12 +5,14 @@ from django_project.telegrambot.students.models import Student
 
 IDZ = "Индивидуальное домашнее задание"
 LR = "Лабораторная работа"
+LS = "Лекции"
 KR = "Курсовая работа"
 K_R = "Контрольная работа"
 
 CHOICES = [
     (IDZ, 'ИДЗ'),
     (LR, 'Л/Р'),
+    (LS, 'лекции'),
     (KR, 'КР'),
     (K_R, 'К/Р'),
 ]
@@ -43,6 +45,12 @@ class Discipline(models.Model):
         blank=True,
         null=True,
         verbose_name="ФИО преподавателя"
+    )
+    consultation = models.EmailField(
+        unique=True,
+        blank=True,
+        null=True,
+        verbose_name="Консультация"
     )
 
     class Meta:
@@ -101,7 +109,8 @@ class Purchace(models.Model):
     )
     item = models.ManyToManyField(
         to=Product,
-        related_name="purchaces"
+        through="ProductPurchase",
+        verbose_name="Продукт"
     )
     amount = models.DecimalField(
         max_digits=5,
@@ -123,3 +132,17 @@ class Purchace(models.Model):
 
     def __str__(self):
         return f"Номер заказа: {self.id} Покупатель: {self.buyer.username}"
+
+
+class ProductPurchase(models.Model):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE
+    )
+    purchase = models.ForeignKey(
+        Purchace,
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return f"покупка {self.product}. {self.purchase}"

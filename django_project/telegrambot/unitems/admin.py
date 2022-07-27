@@ -4,8 +4,14 @@ from .models import (
     Product,
     Purchace,
     Type,
-    Discipline
+    Discipline,
+    ProductPurchase
 )
+
+
+class ProductPurchaseInLine(admin.TabularInline):
+    model = ProductPurchase
+    raw_id_fields = ("product",)
 
 
 @admin.register(Type)
@@ -40,6 +46,7 @@ class AdminPurchace(admin.ModelAdmin):
         'successful',
         'amount',
     )
+    inlines = (ProductPurchaseInLine,)
 
     def tg(self, obj):
         return "@" + obj.buyer.username

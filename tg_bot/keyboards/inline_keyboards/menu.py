@@ -1,8 +1,9 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
+from tg_bot.misc.logger import logger
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
-from tg_bot.services.db_api.db_commands import get_types, get_item
+from tg_bot.services.db_api.db_commands import get_types
 
 menu_cd = CallbackData(
     "show_menu",
@@ -16,7 +17,7 @@ buy_item = CallbackData(
 )
 
 
-def make_callback_data(level, discipline="", type_name=""):
+def make_callback_data(level=0, discipline="", type_name=""):
     return menu_cd.new(
         level=level,
         discipline=discipline,
@@ -24,28 +25,64 @@ def make_callback_data(level, discipline="", type_name=""):
     )
 
 
-async def type_keyboard(message):
+async def choice(discipline):
     CURRENT_LEVEL = 0
+    markup_s = InlineKeyboardMarkup(
+        row_width=1,
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Материалы",
+                    callback_data=make_callback_data(
+                        level=CURRENT_LEVEL + 1,
+                        discipline=discipline,
+                        type_name=""
+                    )
+                ),
+                InlineKeyboardButton(
+                    text="Консультация",
+                    callback_data="info"
+                )
+            ]
+        ]
+    )
+    logger.info(markup_s)
+    return markup_s
+
+
+async def type_keyboard(discipline):
+    CURRENT_LEVEL = 1
     markup = InlineKeyboardMarkup()
-    types = await get_types(message)
-    for i in types["types"]:
-        button_text = f"{i.type.name}"
+    types = await get_types(discipline)
+    for i in types:
+        button_text = i.type.name
+        logger.info(make_callback_data)
         callback_data = make_callback_data(
             level=CURRENT_LEVEL + 1,
-            discipline=types["name"],
+            discipline=discipline,
             type_name=i.type.name
         )
+        logger.info(callback_data)
         markup.insert(
             InlineKeyboardButton(
                 text=button_text,
                 callback_data=callback_data
             )
         )
+    markup.row(
+        InlineKeyboardButton(
+            text='Назад',
+            callback_data=make_callback_data(
+                level=CURRENT_LEVEL - 1,
+                discipline=discipline
+            )
+        )
+    )
     return markup
 
 
 def next_answ(discipline, type_name):
-    CURRENT_LEVEL = 1
+    CURRENT_LEVEL = 2
     # await get_item(discipline, type_name)
     markup = InlineKeyboardMarkup(
         row_width=2,
@@ -64,23 +101,11 @@ def next_answ(discipline, type_name):
                     text="Отменить выбор",
                     callback_data=make_callback_data(
                         level=CURRENT_LEVEL - 1,
-                        # discipline='discipline',
+                        discipline=discipline,
                         type_name=type_name
                     ),
                 )
-            ],
-            # [
-            #     InlineKeyboardButton(
-            #         text="Оформить заказа",
-            #         callback_data=buy_item.new(item_id='Купить'),
-            #     ),
-            # ]
+            ]
         ]
     )
     return markup
-
-
-def cart():
-    markup = InlineKeyboardMarkup(
-
-    )
