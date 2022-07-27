@@ -29,14 +29,7 @@ if __name__ == "__main__":
 
     try:
         logger.info('Бот работает')
-        # redis_cli = redis.Redis(
-        #     host='localhost',
-        #     port=6379,
-        #     db=0
-        # )
-        # print(redis_cli.set(name="test_key", value=10))
         middlewares.setup(dp)
         executor.start_polling(dp, skip_updates=True)
     except Exception as error:
-        # redis_cli.close()
         raise logger.error(f'ПРОБЛЕМА {error=}! Бот остановлен')

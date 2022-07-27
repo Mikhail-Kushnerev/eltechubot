@@ -35,8 +35,7 @@ async def choice(discipline):
                     text="Материалы",
                     callback_data=make_callback_data(
                         level=CURRENT_LEVEL + 1,
-                        discipline=discipline,
-                        type_name=""
+                        discipline=discipline
                     )
                 ),
                 InlineKeyboardButton(
@@ -50,7 +49,7 @@ async def choice(discipline):
     return markup_s
 
 
-async def type_keyboard(discipline):
+async def type_keyboard(discipline, *args):
     CURRENT_LEVEL = 1
     markup = InlineKeyboardMarkup()
     types = await get_types(discipline)

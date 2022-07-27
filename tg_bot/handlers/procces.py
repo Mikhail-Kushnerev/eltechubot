@@ -34,7 +34,6 @@ async def start_shopping(message):
         await message.answer(text="Нет такой")
 
 
-
 @dp.callback_query_handler(add_callback.filter(item_name="ss"))
 async def add_item(call: types.CallbackQuery, callback_data, state: FSMContext):
     id_ = call.message.message_id - 1
@@ -77,7 +76,6 @@ async def buy(callback: types.CallbackQuery, discipline, type_name):
 
 
 async def make_choice(message, *args, **kwargs):
-
     if isinstance(message, types.Message):
         way = await checker(
             (obj := kwargs['target']["target"].name.upper()),
