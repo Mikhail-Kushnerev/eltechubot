@@ -2,7 +2,8 @@ from aiogram import types
 from aiogram.utils.markdown import hbold
 from aiogram.dispatcher.filters import Text
 
-from tg_bot.keyboards.reply import menu
+# from tg_bot.keyboards.reply import menu
+from tg_bot.keyboards.reply import pay_button
 from tg_bot.misc.logger import logger
 
 from loader import dp
@@ -39,7 +40,10 @@ async def get_help(message: types.Message):
             username=message.from_user.username,
         )
         text = "Wellcome " + hbold("студент") + " ту зэ клаб! Ты в БД"
-    await message.answer(text)
+    await message.answer(
+        text,
+        reply_markup=pay_button
+    )
 
 
 @dp.message_handler(Text(equals=("Выбор дисциплины",)))
@@ -47,7 +51,7 @@ async def get_item(message):
     await message.answer("Введи интересующую тебя дисциплину. Возможно, она у меня есть")
 
 
-@dp.message_handler(commands=["cart"])
-async def get_menu(message):
-
-    await message.answer("Боты должны работать", reply_markup=menu)
+# @dp.message_handler(commands=["cart"])
+# async def get_menu(message):
+#
+#     await message.answer("Боты должны работать", reply_markup=menu)

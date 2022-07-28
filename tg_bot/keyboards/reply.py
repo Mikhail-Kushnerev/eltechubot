@@ -2,7 +2,7 @@ from aiogram.types import KeyboardButton
 from aiogram.types import ReplyKeyboardMarkup
 
 
-menu = ReplyKeyboardMarkup(
+pay_button = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Оплатить")],
     ],

@@ -10,7 +10,7 @@ async def write_data(**kwargs):
         "name": kwargs["name"]
     }
     if user_id not in CACHE:
-        CACHE.setdefault(user_id, {})
+        CACHE.setdefault(user_id, {"cart": []})
     CACHE[user_id].update(
         {
             obj["id"]: [[], obj["name"]]

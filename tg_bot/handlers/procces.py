@@ -14,8 +14,29 @@ from tg_bot.keyboards.inline_keyboards.menu import (
 )
 from tg_bot.misc import rate_limit
 from tg_bot.misc.logger import logger
-from tg_bot.services.db_api.db_commands import get_product
+from tg_bot.services.db_api.db_commands import get_product, add_to_cart, packing
 from tg_bot.services.redis_db_cache import write_data, changer_data, checker, CACHE
+
+
+@dp.message_handler(text="Оплатить")
+@dp.message_handler(commands=("pay",))
+async def pay(message):
+    person = message.from_user.id
+    try:
+        obj = CACHE[person]["cart"]
+        if len(obj) == 0:
+            raise Exception
+    except Exception:
+        await message.answer(
+            text='Коризна пуста, друг...'
+        )
+    else:
+        print(obj)
+        await packing(person, obj)
+        for i in obj:
+            await message.answer_document(types.InputFile(i.doc.path.split("/")[-1]))
+        obj.clear()
+        print(obj)
 
 
 @rate_limit(limit=4)
@@ -32,6 +53,11 @@ async def start_shopping(message):
         print("add_cart\n", message.message_id)
     else:
         await message.answer(text="Нет такой")
+        time.sleep(1.7)
+        await dp.bot.delete_message(
+            chat_id=message.chat.id,
+            message_id=message.message_id + 1
+        )
 
 
 @dp.callback_query_handler(add_callback.filter(item_name="ss"))
@@ -46,7 +72,14 @@ async def add_item(call: types.CallbackQuery, callback_data, state: FSMContext):
         message_id=CACHE[person][id_][0][0],
         reply_markup=continue_keyboard
     )
-    print(call, call.message.text.split(" - ")[-1], sep="\n")
+    cart = await add_to_cart(
+        person,
+        CACHE[person][id_][1],
+        call.message.text.split(' - ')[-1]
+    )
+    # cart["target"].amount += cart["price"]
+    # cart["target"].save()
+    # print(cart["target"])
     await call.answer('Добавлено в корзину', )
 
 
@@ -109,7 +142,7 @@ async def make_choice(message, *args, **kwargs):
         else:
             await message.answer('Уже добавлено')
             logger.info('Повторяющийся товар. Сработал Redis')
-            time.sleep(2)
+            time.sleep(1.7)
             await dp.bot.delete_message(
                 chat_id=message.chat.id,
                 message_id=message.message_id + 1

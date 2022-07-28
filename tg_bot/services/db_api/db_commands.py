@@ -1,7 +1,8 @@
-import os
+from asgiref.sync import sync_to_async
+from django.shortcuts import get_object_or_404
 
-from django_project.telegrambot.students.models import Student
 from django_project.telegrambot.unitems.models import (
+    Type,
     Discipline,
     Product,
     Purchace,
@@ -10,9 +11,7 @@ from django_project.telegrambot.unitems.models import (
 from django_project.telegrambot.students.models import (
     Student,
 )
-from django.shortcuts import get_object_or_404
-from asgiref.sync import sync_to_async
-
+from tg_bot.services.redis_db_cache import CACHE
 
 
 @sync_to_async
@@ -78,24 +77,47 @@ def get_item(dis, type_name):
         item=dis.id,
         type=type_name.id
     )
-    return target
+    return target.id
     # types = Product.objects.filter(discipline__name=item.name)
 
 
 @sync_to_async
-def add_to_cart(person, name):
-    obj = Purchace.objects.create(
-        buyer_id=person,
-        # item=pk,
-        # amount=5,
-    ).save()
-    product = get_object_or_404(
-        Product,
+def add_to_cart(person, name, type_name):
+    dis = get_object_or_404(
+        Discipline,
         name=name
     )
-    target = get_item(product)
-    products = ProductPurchase.objects.create(
-        purchase=obj.id,
-        product=target
+    type_ = get_object_or_404(
+        Type,
+        name=type_name
     )
+    product = get_object_or_404(
+        Product,
+        discipline=dis.id,
+        type=type_.id
+    )
+    CACHE[person]["cart"].append(product)
+    print(CACHE)
+
+
+@sync_to_async
+def packing(person, cart):
+    user = get_object_or_404(
+        Student,
+        id_user=person
+    )
+    obj = Purchace.objects.create(
+        buyer_id=user.id
+    )
+    for item in cart:
+        products = ProductPurchase.objects.create(
+            purchase=obj,
+            product=item
+        )
+    # context = {
+    #     "price": product.price,
+    #     "target": obj
+    # }
+    # cart.clear()
+    print(cart)
     return obj

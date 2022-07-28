@@ -2,12 +2,11 @@ from django.db import models
 
 from django_project.telegrambot.students.models import Student
 
-
 IDZ = "ИДЗ"
-LR = "Л/Р"
+LR = "Л_Р"
 LS = "лекции"
 KR = "курсач"
-K_R = "К/Р"
+K_R = "К_Р"
 
 CHOICES = [
     (IDZ, 'Индивидуальное домашнее задание'),
@@ -87,6 +86,12 @@ class Product(models.Model):
     doc = models.FileField(
         upload_to=user_directory_path,
     )
+    price = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        blank=True,
+        verbose_name="Стоимость"
+    )
 
     class Meta:
         ordering = ("-id",)
@@ -115,6 +120,9 @@ class Purchace(models.Model):
     amount = models.DecimalField(
         max_digits=5,
         decimal_places=2,
+        default=0,
+        # null=True,
+        # blank=True,
         verbose_name="Стоимость"
     )
     purchase_time = models.DateTimeField(
@@ -131,7 +139,13 @@ class Purchace(models.Model):
         verbose_name_plural = "Покупки"
 
     def __str__(self):
-        return f"Номер заказа: {self.id} Покупатель: {self.buyer.username}"
+        return "\n".join(
+            (
+                f"Номер заказа: {self.id}",
+                f"Покупатель: {self.buyer.username}",
+                f"Цена: {self.amount}"
+            )
+        )
 
 
 class ProductPurchase(models.Model):
