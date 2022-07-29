@@ -18,6 +18,20 @@ from tg_bot.services.db_api.db_commands import get_product, add_to_cart, packing
 from tg_bot.services.redis_db_cache import write_data, changer_data, checker, CACHE
 
 
+@dp.callback_query_handler(text="continue")
+async def delete_item(call: types.CallbackQuery):
+    msg = call.message.message_id
+    person = call.from_user.id
+    print(call.message.chat.id)
+    del CACHE[person][msg]
+    await dp.bot.delete_message(
+        chat_id=call.message.chat.id,
+        message_id=msg
+    )
+    # print(CACHE)
+
+
+
 @dp.message_handler(text="Оплатить")
 @dp.message_handler(commands=("pay",))
 async def pay(message):
@@ -49,27 +63,34 @@ async def start_shopping(message):
     find_target = message.text.strip().upper()
     target = await get_product(find_target)
     if target:
-        await make_choice(message, target=target, obj=find_target)
-        print("add_cart\n", message.message_id)
+        await make_choice(
+            message,
+            target=target,
+            obj=find_target,
+            msg_id=message.message_id
+        )
     else:
-        await message.answer(text="Нет такой")
+        q = await message.answer(text="Нет такой")
         time.sleep(1.7)
         await dp.bot.delete_message(
             chat_id=message.chat.id,
-            message_id=message.message_id + 1
+            message_id=q.message_id
         )
 
 
 @dp.callback_query_handler(add_callback.filter(item_name="ss"))
-async def add_item(call: types.CallbackQuery, callback_data, state: FSMContext):
+async def add_item(call: types.CallbackQuery, callback_data):
     id_ = call.message.message_id - 1
+    person = call.from_user.id
+    while id_ not in CACHE[person]:
+        id_ -= 1
     person = call.from_user.id
     print(CACHE)
     await dp.bot.edit_message_text(
         text='Ждёт оплаты:\n'
              f"{CACHE[person][id_][1]} {call.message.text.split(' - ')[-1]}",
         chat_id=call.message.chat.id,
-        message_id=CACHE[person][id_][0][0],
+        message_id=call.message.message_id,
         reply_markup=continue_keyboard
     )
     cart = await add_to_cart(
@@ -90,26 +111,27 @@ async def info_answer(callback: types.CallbackQuery):
     )
 
 
-async def buy(callback: types.CallbackQuery, discipline, type_name):
-    print(callback)
-    markup = next_answ(discipline, type_name)
+async def buy(callback: types.CallbackQuery, discipline, type_name, id_):
+    print(id_, callback, sep="\n")
+    markup = next_answ(discipline, type_name, id_)
     person = callback.from_user.id
-    id_ = callback.message.message_id
-    print(callback, '\n', id_, person)
-    await changer_data(id_, person)
+    id_1 = callback.message.message_id
+    # while id
+    await changer_data(int(id_), person, int(id_1))
     await callback.message.edit_text(
         f"Заказ:\n - {discipline};\n - {type_name}"
     )
     await dp.bot.edit_message_text(
         text=f"Заказ:\n - {discipline};\n - {type_name}",
         chat_id=callback.message.chat.id,
-        message_id=id_,
+        message_id=id_1,
         reply_markup=markup
     )
 
 
 async def make_choice(message, *args, **kwargs):
     if isinstance(message, types.Message):
+        print(message)
         way = await checker(
             (obj := kwargs['target']["target"].name.upper()),
             message.from_user.id
@@ -127,8 +149,7 @@ async def make_choice(message, *args, **kwargs):
                 id_=id_,
                 name=obj
             )
-            markup = await choice(obj)
-            print(obj)
+            markup = await choice(obj, kwargs["msg_id"])
             await message.answer(
                 text='\n'.join(
                     (
@@ -140,18 +161,23 @@ async def make_choice(message, *args, **kwargs):
                 reply_markup=markup
             )
         else:
-            await message.answer('Уже добавлено')
+            q = await message.answer('Уже добавлено')
+            print(q.message_id)
             logger.info('Повторяющийся товар. Сработал Redis')
             time.sleep(1.7)
             await dp.bot.delete_message(
                 chat_id=message.chat.id,
-                message_id=message.message_id + 1
+                message_id=q.message_id
             )
         print('--------------------------------------------------')
     else:
         logger.info('Отмена выбора. Сработал Callback')
         call = message
-        markup = await choice(call.data.split(":")[2])
+        person = call.message.chat.id
+        i = call.message.message_id
+        while i not in CACHE[person]:
+            i -= 1
+        markup = await choice(call.data.split(":")[2], i)
         await dp.bot.edit_message_text(
             text=call.message.text,
             chat_id=call.message.chat.id,
@@ -161,10 +187,10 @@ async def make_choice(message, *args, **kwargs):
         print('--------------------------------------------------')
 
 
-async def get_to_cart(callback: types.CallbackQuery, discipline, *args):
-    print(discipline)
+async def get_to_cart(callback: types.CallbackQuery, discipline, ttype, id_):
+    print(callback)
     logger.info(callback)
-    markup = await type_keyboard(discipline)
+    markup = await type_keyboard(discipline, id_)
     await dp.bot.edit_message_text(
         text='\n'.join(
             (
@@ -177,16 +203,6 @@ async def get_to_cart(callback: types.CallbackQuery, discipline, *args):
         message_id=callback.message.message_id,
         reply_markup=markup
     )
-    # await callback.message.edit_text(
-    #     text='\n'.join(
-    #         (
-    #             "Мои поздравление, мой друг. Такая есть!",
-    #             f" - {discipline};",
-    #             # f" - {kwargs['target']['target'].lektor}.",
-    #         )
-    #     ),
-    #     reply_markup=markup
-    # )
 
 
 @dp.callback_query_handler(menu_cd.filter())
@@ -195,10 +211,11 @@ async def navigation(call: types.CallbackQuery, callback_data):
     current_lvl = callback_data.get("level")
     discipline = callback_data.get("discipline")
     ttypy = callback_data.get("type_name")
+    id_ = callback_data.get("id_")
     levels = {
         "0": make_choice,
         "1": get_to_cart,
         "2": buy,
     }
     current_lvl_f = levels[current_lvl]
-    await current_lvl_f(call, discipline, ttypy)
+    await current_lvl_f(call, discipline, ttypy, id_)

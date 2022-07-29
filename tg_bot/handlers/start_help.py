@@ -38,6 +38,8 @@ async def get_help(message: types.Message):
         user = await add_user(
             user_id=message.from_user.id,
             username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
         )
         text = "Wellcome " + hbold("студент") + " ту зэ клаб! Ты в БД"
     await message.answer(

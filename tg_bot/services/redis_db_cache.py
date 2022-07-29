@@ -6,20 +6,23 @@ CACHE = {}
 async def write_data(**kwargs):
     user_id = kwargs["user_id"]
     obj = {
-        "id": kwargs["id_"],
+        "id": int(kwargs["id_"]),
         "name": kwargs["name"]
     }
     if user_id not in CACHE:
         CACHE.setdefault(user_id, {"cart": []})
     CACHE[user_id].update(
         {
-            obj["id"]: [[], obj["name"]]
+            obj["id"]: [obj["name"]]
         }
     )
+    print(CACHE)
 
 
-async def changer_data(id_, person):
-    CACHE[person][id_ - 1][0].append(id_)
+async def changer_data(id_: int, person, id_1):
+    print(CACHE, id_, id_1)
+    if len(CACHE[person][int(id_)]) == 1:
+        CACHE[person][int(id_)].insert(0, id_1)
 
 
 async def checker(find_target, user_id):

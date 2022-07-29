@@ -10,14 +10,19 @@ class Student(TimeBasedModel):
     )
     username = models.CharField(
         max_length=250,
+        default="",
+        blank=True,
+        null=True,
         verbose_name="Nickname пользователя"
     )
     first_name = models.CharField(
         max_length=150,
+        default="",
         null=True
     )
     last_name = models.CharField(
         max_length=150,
+        default="",
         null=True
     )
 

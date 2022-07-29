@@ -33,11 +33,13 @@ def select_user(user_id):
 
 
 @sync_to_async
-def add_user(user_id, username):
+def add_user(user_id, username, first_name, last_name):
     try:
         new_student = Student(
             id_user=user_id,
-            username=username
+            username=username,
+            first_name=first_name,
+            last_name=last_name
         ).save()
         return new_student
     except Exception:
