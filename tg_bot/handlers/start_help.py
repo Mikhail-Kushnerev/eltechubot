@@ -2,7 +2,6 @@ from aiogram import types
 from aiogram.utils.markdown import hbold
 from aiogram.dispatcher.filters import Text
 
-# from tg_bot.keyboards.reply import menu
 from tg_bot.keyboards.reply import pay_button
 from tg_bot.misc.logger import logger
 
@@ -15,8 +14,8 @@ from tg_bot.services.db_api.db_commands import add_user
 @dp.message_handler(commands=["start", "help"])
 async def get_help(message: types.Message):
     if message.text.startswith("/h"):
-        user = message.chat.username
-        text = "\n".join(
+        user: str = message.chat.username
+        text: str = "\n".join(
             (
                 f"Привет, {hbold(user)}!",
                 "Я – суперсекретная разработка ЛЭТИ, созданная для помощи ",
@@ -41,7 +40,7 @@ async def get_help(message: types.Message):
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
         )
-        text = "Wellcome " + hbold("студент") + " ту зэ клаб! Ты в БД"
+        text: str = "Wellcome " + hbold("студент") + " ту зэ клаб! Ты в БД"
     await message.answer(
         text,
         reply_markup=pay_button
@@ -51,9 +50,3 @@ async def get_help(message: types.Message):
 @dp.message_handler(Text(equals=("Выбор дисциплины",)))
 async def get_item(message):
     await message.answer("Введи интересующую тебя дисциплину. Возможно, она у меня есть")
-
-
-# @dp.message_handler(commands=["cart"])
-# async def get_menu(message):
-#
-#     await message.answer("Боты должны работать", reply_markup=menu)

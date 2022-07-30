@@ -10,7 +10,7 @@ menu_cd = CallbackData(
     "level",
     "discipline",
     "type_name",
-    "id_"
+    "msg_id"
 )
 buy_item = CallbackData(
     "buy",
@@ -18,18 +18,18 @@ buy_item = CallbackData(
 )
 
 
-def make_callback_data(level=0, discipline="", type_name="", id_=0):
+def make_callback_data(level=0, discipline="", type_name="", msg_id=0):
     return menu_cd.new(
         level=level,
         discipline=discipline,
         type_name=type_name,
-        id_=id_
+        msg_id=msg_id
     )
 
 
-async def choice(discipline, id_):
-    CURRENT_LEVEL = 0
-    markup_s = InlineKeyboardMarkup(
+async def choice(discipline, msg_id) -> InlineKeyboardMarkup:
+    CURRENT_LEVEL: int = 0
+    markup_s: InlineKeyboardMarkup = InlineKeyboardMarkup(
         row_width=1,
         inline_keyboard=[
             [
@@ -38,7 +38,7 @@ async def choice(discipline, id_):
                     callback_data=make_callback_data(
                         level=CURRENT_LEVEL + 1,
                         discipline=discipline,
-                        id_=id_
+                        msg_id=msg_id
                     )
                 ),
                 InlineKeyboardButton(
@@ -52,18 +52,18 @@ async def choice(discipline, id_):
     return markup_s
 
 
-async def type_keyboard(discipline, id_):
-    CURRENT_LEVEL = 1
-    markup = InlineKeyboardMarkup()
+async def type_keyboard(discipline, msg_id) -> InlineKeyboardMarkup:
+    CURRENT_LEVEL: int = 1
+    markup: InlineKeyboardMarkup = InlineKeyboardMarkup()
     types = await get_types(discipline)
     for i in types:
-        button_text = i.type.name
+        button_text: str = i.type.name
         logger.info(make_callback_data)
         callback_data = make_callback_data(
             level=CURRENT_LEVEL + 1,
             discipline=discipline,
             type_name=i.type.name,
-            id_=id_
+            msg_id=msg_id
         )
         logger.info(callback_data)
         markup.insert(
@@ -78,17 +78,16 @@ async def type_keyboard(discipline, id_):
             callback_data=make_callback_data(
                 level=CURRENT_LEVEL - 1,
                 discipline=discipline,
-                id_=id_
+                msg_id=msg_id
             )
         )
     )
     return markup
 
 
-def next_answ(discipline, type_name, id_):
-    CURRENT_LEVEL = 2
-    # await get_item(discipline, type_name)
-    markup = InlineKeyboardMarkup(
+def next_answ(discipline, type_name, msg_id) -> InlineKeyboardMarkup:
+    CURRENT_LEVEL: int = 2
+    markup: InlineKeyboardMarkup = InlineKeyboardMarkup(
         row_width=2,
         inline_keyboard=[
             [
@@ -107,7 +106,7 @@ def next_answ(discipline, type_name, id_):
                         level=CURRENT_LEVEL - 1,
                         discipline=discipline,
                         type_name=type_name,
-                        id_=id_
+                        msg_id=msg_id
                     ),
                 )
             ]

@@ -4,8 +4,8 @@ from aiogram.types import InlineKeyboardMarkup
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
 
 
-continue_keyboard = InlineKeyboardMarkup()
-answer = InlineKeyboardButton(
+continue_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup()
+answer: InlineKeyboardButton = InlineKeyboardButton(
     text="Удалить",
     callback_data="continue"
 )
