@@ -7,13 +7,14 @@ async def write_data(**kwargs):
     user_id = kwargs["user_id"]
     obj = {
         "id": int(kwargs["id_"]),
-        "name": kwargs["name"]
+        "name": kwargs["name"],
+        "target": kwargs["target"]
     }
     if user_id not in CACHE:
         CACHE.setdefault(user_id, {"cart": []})
     CACHE[user_id].update(
         {
-            obj["id"]: [obj["name"]]
+            obj["id"]: [obj["target"], obj["name"]]
         }
     )
     print(CACHE)

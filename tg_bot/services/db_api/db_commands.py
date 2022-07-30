@@ -63,6 +63,16 @@ def get_product(name):
 
 
 @sync_to_async
+def find_type(type_name):
+    print(type_name)
+    result = get_object_or_404(
+        Type,
+        name=type_name
+    )
+    return result
+
+
+@sync_to_async
 def get_types(name):
     item = get_object_or_404(
         Discipline,
@@ -74,12 +84,13 @@ def get_types(name):
 
 @sync_to_async
 def get_item(dis, type_name):
+    print(dis, type_name)
     target = get_object_or_404(
         Product,
-        item=dis.id,
+        discipline=dis,
         type=type_name.id
     )
-    return target.id
+    return target
     # types = Product.objects.filter(discipline__name=item.name)
 
 

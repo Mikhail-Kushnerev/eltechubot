@@ -1,7 +1,9 @@
+import asyncio
 import time
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
+from django.shortcuts import get_object_or_404
 
 from loader import dp
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
@@ -14,43 +16,67 @@ from tg_bot.keyboards.inline_keyboards.menu import (
 )
 from tg_bot.misc import rate_limit
 from tg_bot.misc.logger import logger
-from tg_bot.services.db_api.db_commands import get_product, add_to_cart, packing
+from tg_bot.services.db_api.db_commands import get_product, add_to_cart, packing, get_item, find_type
 from tg_bot.services.redis_db_cache import write_data, changer_data, checker, CACHE
 
 
+# @dp.callback_query_handler(add_callback.filter(item_name="ss"))
 @dp.callback_query_handler(text="continue")
 async def delete_item(call: types.CallbackQuery):
-    msg = call.message.message_id
+    msg = call.message.message_id - 1
     person = call.from_user.id
-    print(call.message.chat.id)
+    while msg not in CACHE[person]:
+        msg -= 1
+    person = call.from_user.id
+    # print(call.message.chat.id)
     del CACHE[person][msg]
     await dp.bot.delete_message(
         chat_id=call.message.chat.id,
-        message_id=msg
+        message_id=call.message.message_id
     )
-    # print(CACHE)
-
+    print(CACHE)
 
 
 @dp.message_handler(text="Оплатить")
 @dp.message_handler(commands=("pay",))
 async def pay(message):
     person = message.from_user.id
+    del_list = []
     try:
+        for i in CACHE[person]:
+            print(i)
+            match i:
+                case "cart":
+                    continue
+                case _:
+                    if isinstance(CACHE[person][i][0], tuple):
+                        CACHE[person]["cart"].append(CACHE[person][i][0][1])
+                        del_list.append(i)
         obj = CACHE[person]["cart"]
-        if len(obj) == 0:
+        if not obj:
             raise Exception
-    except Exception:
-        await message.answer(
-            text='Коризна пуста, друг...'
-        )
-    else:
-        print(obj)
         await packing(person, obj)
         for i in obj:
             await message.answer_document(types.InputFile(i.doc.path.split("/")[-1]))
         obj.clear()
-        print(obj)
+    except Exception:
+        await dp.bot.delete_message(
+            chat_id=message.from_user.id,
+            message_id=message.message_id
+        )
+        msg = await message.answer(
+            text='Коризна пуста, друг...'
+        )
+        await asyncio.sleep(2)
+        await dp.bot.delete_message(
+            chat_id=message.from_user.id,
+            message_id=msg.message_id
+        )
+    else:
+        obj.clear()
+        target = CACHE[person]
+        for i in del_list:
+            del target[i]
 
 
 @rate_limit(limit=4)
@@ -85,7 +111,6 @@ async def add_item(call: types.CallbackQuery, callback_data):
     while id_ not in CACHE[person]:
         id_ -= 1
     person = call.from_user.id
-    print(CACHE)
     await dp.bot.edit_message_text(
         text='Ждёт оплаты:\n'
              f"{CACHE[person][id_][1]} {call.message.text.split(' - ')[-1]}",
@@ -93,11 +118,19 @@ async def add_item(call: types.CallbackQuery, callback_data):
         message_id=call.message.message_id,
         reply_markup=continue_keyboard
     )
-    cart = await add_to_cart(
-        person,
-        CACHE[person][id_][1],
-        call.message.text.split(' - ')[-1]
+    type_ = await find_type(type_name=call.message.text.split(' - ')[-1])
+    q = await get_item(
+        # person,
+        dis=CACHE[person][id_][0],
+        type_name=type_
     )
+    CACHE[person][id_][0] = True, q
+    print(CACHE)
+    # cart = await add_to_cart(
+    #     person,
+    #     CACHE[person][id_][2],
+    #     call.message.text.split(' - ')[-1]
+    # )
     # cart["target"].amount += cart["price"]
     # cart["target"].save()
     # print(cart["target"])
@@ -112,12 +145,13 @@ async def info_answer(callback: types.CallbackQuery):
 
 
 async def buy(callback: types.CallbackQuery, discipline, type_name, id_):
-    print(id_, callback, sep="\n")
+    # print(id_, callback, sep="\n")
     markup = next_answ(discipline, type_name, id_)
     person = callback.from_user.id
     id_1 = callback.message.message_id
     # while id
-    await changer_data(int(id_), person, int(id_1))
+    # await changer_data(int(id_), person, int(id_1))
+    # print(CACHE)
     await callback.message.edit_text(
         f"Заказ:\n - {discipline};\n - {type_name}"
     )
@@ -131,7 +165,7 @@ async def buy(callback: types.CallbackQuery, discipline, type_name, id_):
 
 async def make_choice(message, *args, **kwargs):
     if isinstance(message, types.Message):
-        print(message)
+        # print(message.message_id)
         way = await checker(
             (obj := kwargs['target']["target"].name.upper()),
             message.from_user.id
@@ -147,6 +181,7 @@ async def make_choice(message, *args, **kwargs):
             await write_data(
                 user_id=user_id,
                 id_=id_,
+                target=kwargs['target']["target"].id,
                 name=obj
             )
             markup = await choice(obj, kwargs["msg_id"])
@@ -162,7 +197,7 @@ async def make_choice(message, *args, **kwargs):
             )
         else:
             q = await message.answer('Уже добавлено')
-            print(q.message_id)
+            # print(q.message_id)
             logger.info('Повторяющийся товар. Сработал Redis')
             time.sleep(1.7)
             await dp.bot.delete_message(
@@ -188,7 +223,7 @@ async def make_choice(message, *args, **kwargs):
 
 
 async def get_to_cart(callback: types.CallbackQuery, discipline, ttype, id_):
-    print(callback)
+    # print(callback)
     logger.info(callback)
     markup = await type_keyboard(discipline, id_)
     await dp.bot.edit_message_text(

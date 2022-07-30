@@ -44,9 +44,11 @@ class ThrottlingMiddleware(BaseMiddleware):
 
         delta = throttled.rate - throttled.delta
         if throttled.exceeded_count <= 2:
-            await message.reply("Не души, пж. ДАй передохнуть (5 сек.)")
+            await message.answer("Не так быстро, пж")
 
         await asyncio.sleep(delta)
         thr = await dispatcher.check_key(key)
         if thr.exceeded_count == throttled.exceeded_count:
-            await message.reply("Ещё раз")
+            answer = await message.reply("Ещё раз")
+            await asyncio.sleep(1.3)
+            await answer.delete()
