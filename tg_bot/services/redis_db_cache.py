@@ -7,7 +7,7 @@ CACHE: dict[
 ] = {}
 
 
-async def write_data(**kwargs):
+async def write_data(**kwargs) -> None:
     user_id: int = kwargs["user_id"]
     obj: dict[int | str, int | str | object] = {
         "id": int(kwargs["msg_id"]),
@@ -24,15 +24,18 @@ async def write_data(**kwargs):
     print(CACHE)
 
 
-async def changer_data(id_: int, person, id_1):
+async def changer_data(id_: int, person: int, id_1: int) -> None:
     print(CACHE, id_, id_1)
     if len(CACHE[person][int(id_)]) == 2:
         CACHE[person][int(id_)].insert(1, id_1)
 
 
-async def checker(find_target, user_id) -> bool:
-    # print(redis_cli.hgetall(user_id))
-    # print(find_target.encode() in redis_cli.hgetall(user_id))
+async def checker(find_target: str, user_id: int) -> bool:
+    """
+    :param find_target:
+    :param user_id:
+    :return:
+    """
     if find_target.encode() not in redis_cli.hgetall(user_id):
         redis_cli.hset(user_id, find_target, "+")
         # print(redis_cli.hgetall(user_id))

@@ -1,3 +1,6 @@
+import decimal
+
+from aiogram.utils import markdown
 from asgiref.sync import sync_to_async
 from django.shortcuts import get_object_or_404
 
@@ -11,12 +14,17 @@ from django_project.telegrambot.unitems.models import (
 from django_project.telegrambot.students.models import (
     Student,
 )
-from tg_bot.services.redis_db_cache import CACHE
 
 
 @sync_to_async
-def get_student(user_id):
-    student = get_object_or_404(
+def info_func(dis_id: int) -> str:
+    item = Discipline.objects.get(id=dis_id)
+    return item.consultation
+
+
+@sync_to_async
+def get_student(user_id: int) -> bool:
+    student: Student = get_object_or_404(
         Student,
         id=user_id
     )
@@ -24,48 +32,48 @@ def get_student(user_id):
 
 
 @sync_to_async
-def select_user(user_id):
-    student = get_object_or_404(
-        Student,
-        id=user_id
-    )
-    return student
-
-
-@sync_to_async
-def add_user(user_id, username, first_name, last_name):
+def add_user(
+        user_id: int,
+        username: str,
+        first_name: str,
+        last_name: str
+) -> str:
     try:
-        new_student = Student(
+        if Student.objects.get(
+                id_user=user_id
+        ):
+            text: str = "Введи интересующую тебя дисциплину. Возможно, она у меня есть"
+        else:
+            raise Exception
+    except Exception:
+        Student.objects.create(
             id_user=user_id,
             username=username,
             first_name=first_name,
             last_name=last_name
-        ).save()
-        return new_student
-    except Exception:
-        return select_user(user_id)
-
-
-@sync_to_async
-def get_product(name):
-    try:
-        item = get_object_or_404(
-            Discipline,
-            name=name
         )
-        context = {
-            "target": item,
-            "file": item.products.first().doc.path.split("/")[-1],
-        }
-        return context
-    except Exception:
-        return False
+        text: str = "".join(
+            (
+                "Спсибо за регистрацию, ",
+                markdown.hbold("студент")
+            )
+        )
+    finally:
+        return text
 
 
 @sync_to_async
-def find_type(type_name):
-    print(type_name)
-    result = get_object_or_404(
+def get_product(name: str):
+    item: Discipline = get_object_or_404(
+        Discipline,
+        name=name
+    )
+    return item
+
+
+@sync_to_async
+def find_type(type_name: str) -> Type:
+    result: Type = get_object_or_404(
         Type,
         name=type_name
     )
@@ -73,19 +81,19 @@ def find_type(type_name):
 
 
 @sync_to_async
-def get_types(name):
-    item = get_object_or_404(
+def get_types(name: str) -> Purchace:
+    item: Discipline = get_object_or_404(
         Discipline,
         name=name.upper()
     )
-    types = Product.objects.filter(discipline__name=item.name)
+    types: Purchace = Product.objects.filter(discipline__name=item.name)
     return types
 
 
 @sync_to_async
-def get_item(dis, type_name):
+def get_item(dis: int, type_name: Type) -> Product:
     print(dis, type_name)
-    target = get_object_or_404(
+    target: Product = get_object_or_404(
         Product,
         discipline=dis,
         type=type_name.id
@@ -95,42 +103,43 @@ def get_item(dis, type_name):
 
 
 @sync_to_async
-def add_to_cart(person, name, type_name):
-    dis = get_object_or_404(
+def check_price(
+        name: str,
+        type_name: str
+) -> decimal:
+    dis: Discipline = get_object_or_404(
         Discipline,
         name=name
     )
-    type_ = get_object_or_404(
+    name_type: Type = get_object_or_404(
         Type,
         name=type_name
     )
-    product = get_object_or_404(
-        Product,
+    product: Product = Product.objects.get(
         discipline=dis.id,
-        type=type_.id
+        type=name_type.id
     )
-    CACHE[person]["cart"].append(product)
-    print(CACHE)
+    return product.price
 
 
 @sync_to_async
-def packing(person, cart):
-    user = get_object_or_404(
+def packing(person: int, cart: list[Product]) -> decimal:
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    user: Student = get_object_or_404(
         Student,
         id_user=person
     )
-    obj = Purchace.objects.create(
+    obj: Purchace = Purchace.objects.create(
         buyer_id=user.id
     )
+    print(f"{cart=}\n{user=}\t{obj=}\n{user.id=}\t{obj.id=}")
     for item in cart:
-        products = ProductPurchase.objects.create(
+        print(item)
+        ProductPurchase.objects.create(
             purchase=obj,
             product=item
         )
-    # context = {
-    #     "price": product.price,
-    #     "target": obj
-    # }
-    # cart.clear()
-    print(cart)
-    return obj
+        print("-----------------------------------")
+        obj.amount += item.price
+        obj.save()
+    return obj.amount

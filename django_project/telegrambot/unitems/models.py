@@ -45,15 +45,15 @@ class Discipline(models.Model):
         null=True,
         verbose_name="ФИО преподавателя"
     )
-    consultation = models.EmailField(
-        unique=True,
+    consultation = models.CharField(
+        max_length=50,
         blank=True,
         null=True,
         verbose_name="Консультация"
     )
 
     class Meta:
-        ordering = ["name"]
+        ordering = ("name",)
         verbose_name = "Дисциплина"
         verbose_name_plural = "Дисциплины"
 

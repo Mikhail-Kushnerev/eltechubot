@@ -5,14 +5,14 @@ from tg_bot.misc.logger import logger
 from tg_bot.keyboards.inline_keyboards.callback_datas import add_callback
 from tg_bot.services.db_api.db_commands import get_types
 
-menu_cd = CallbackData(
+menu_cd: CallbackData = CallbackData(
     "show_menu",
     "level",
     "discipline",
     "type_name",
     "msg_id"
 )
-buy_item = CallbackData(
+buy_item: CallbackData = CallbackData(
     "buy",
     "item_id"
 )

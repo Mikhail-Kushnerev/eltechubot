@@ -1,5 +1,5 @@
 import logging
-
+from logging import Logger
 
 logging.basicConfig(
     level=logging.INFO,
@@ -7,4 +7,4 @@ logging.basicConfig(
     format="|\t%(asctime)s – [%(levelname)s]: %(message)s. "
            "Исполняемый файл – '%(filename)s': функция – '%(funcName)s'(%(lineno)d)",
 )
-logger = logging.getLogger(__name__)
+logger: Logger = logging.getLogger(__name__)

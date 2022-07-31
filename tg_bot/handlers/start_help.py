@@ -10,12 +10,12 @@ from tg_bot.misc import rate_limit
 from tg_bot.services.db_api.db_commands import add_user
 
 
-@rate_limit(limit=5, key="/start")
+# @rate_limit(limit=5, key="/start")
 @dp.message_handler(commands=["start", "help"])
 async def get_help(message: types.Message):
     if message.text.startswith("/h"):
-        user: str = message.chat.username
-        text: str = "\n".join(
+        user: str = nick if (nick := message.chat.username) is not None else message.chat.first_name
+        answer_text: str = "\n".join(
             (
                 f"Привет, {hbold(user)}!",
                 "Я – суперсекретная разработка ЛЭТИ, созданная для помощи ",
@@ -30,19 +30,16 @@ async def get_help(message: types.Message):
         )
         logger.info(
             'Польователь отправил команду help. Сообщение получено',
-            # f'{middleware_data}'
         )
-        # logger.error('Польователь отправил команду help. Сообщение НЕ получено')
     elif message.text.startswith("/st"):
-        user = await add_user(
+        answer_text: str = await add_user(
             user_id=message.from_user.id,
             username=message.from_user.username,
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
         )
-        text: str = "Wellcome " + hbold("студент") + " ту зэ клаб! Ты в БД"
     await message.answer(
-        text,
+        text=answer_text,
         reply_markup=pay_button
     )
 

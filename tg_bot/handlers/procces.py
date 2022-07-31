@@ -1,5 +1,6 @@
 import asyncio
 import time
+import decimal
 
 from aiogram import types
 from aiogram.utils import markdown
@@ -19,9 +20,14 @@ from tg_bot.services.db_api.db_commands import (
     get_product,
     packing,
     get_item,
-    find_type
+    find_type, info_func, check_price
 )
-from tg_bot.services.redis_db_cache import write_data, checker, CACHE, changer_data
+from tg_bot.services.redis_db_cache import (
+    write_data,
+    checker,
+    CACHE,
+    changer_data
+)
 
 
 @dp.message_handler(commands="clear")
@@ -72,12 +78,12 @@ async def pay(message: types.Message):
                     if isinstance(CACHE[person][i][0], tuple):
                         CACHE[person]["cart"].append(CACHE[person][i][0][1])
                         del_list.append(i)
-        obj: list[int] = CACHE[person]["cart"]
-        if not obj:
+        cart: list[int] = CACHE[person]["cart"]
+        if not cart:
             raise Exception
-        await packing(person, obj)
-        for i in obj:
-            await message.answer_document(types.InputFile(i.doc.path.split("/")[-1]))
+        gold: decimal = await packing(person, cart)
+        text: str = f"Сумма заказа: {gold}"
+        await message.answer(text)
     except Exception:
         await dp.bot.delete_message(
             chat_id=message.from_user.id,
@@ -92,7 +98,9 @@ async def pay(message: types.Message):
             message_id=msg.message_id
         )
     else:
-        obj.clear()
+        for i in cart:
+            await message.answer_document(types.InputFile(i.doc.path.split("/")[-1]))
+        cart.clear()
         target: dict[
             str | int, list[
                 tuple[bool, object] | int | str]
@@ -110,7 +118,7 @@ async def pay(message: types.Message):
 
 @rate_limit(limit=4)
 @dp.message_handler()
-async def start_shopping(message):
+async def start_shopping(message: types.Message):
     await dp.bot.delete_message(
         chat_id=message.chat.id,
         message_id=message.message_id
@@ -139,36 +147,39 @@ async def add_item(call: types.CallbackQuery, callback_data):
     person: int = call.from_user.id
     while msg_id not in CACHE[person]:
         msg_id -= 1
+    type_name: object = await find_type(type_name=(name_type := call.message.text.split("\n")[-2].split()[-1]))
+    product: object = await get_item(
+        dis=CACHE[person][msg_id][0],
+        type_name=type_name
+    )
+    text: str = "\n".join(
+            (
+                "Ждёт оплаты:",
+                f"{markdown.hbold('Дисциплина')}: {CACHE[person][msg_id][2]}",
+                f"{markdown.hbold('Вид работы')}: {name_type}",
+                f"{markdown.hbold('Цена')}: {product.price};",
+            )
+        )
     await dp.bot.edit_message_text(
-        text='Ждёт оплаты:\n'
-             f"{CACHE[person][msg_id][2]} {call.message.text.split(' - ')[-1]}",
+        text=text,
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
         reply_markup=continue_keyboard
     )
-    type_name: object = await find_type(type_name=call.message.text.split(' - ')[-1])
-    del_info_msg: object = await get_item(
-        # person,
-        dis=CACHE[person][msg_id][0],
-        type_name=type_name
-    )
-    CACHE[person][msg_id][0] = True, del_info_msg
-    print(CACHE)
-    # cart = await add_to_cart(
-    #     person,
-    #     CACHE[person][id_][2],
-    #     call.message.text.split(' - ')[-1]
-    # )
-    # cart["target"].amount += cart["price"]
-    # cart["target"].save()
-    # print(cart["target"])
+    CACHE[person][msg_id][0] = True, product
     await call.answer('Добавлено в корзину', )
 
 
 @dp.callback_query_handler(text="info")
 async def info_answer(callback: types.CallbackQuery):
+    person: int = callback.from_user.id
+    msg_id: int = callback.message.message_id
+    while msg_id not in CACHE[person]:
+        msg_id -= 1
+    info_consult_msg: str = await info_func(CACHE[person][msg_id][0])
     await callback.answer(
-        text="@yandex"
+        text=markdown.link("VK\t", info_consult_msg),
+        show_alert=True
     )
 
 
@@ -179,10 +190,10 @@ async def buy(
         msg_id: int
 ):
     markup: types.InlineKeyboardMarkup = next_answ(discipline, type_name, msg_id)
-    msg_id: int = callback.message.message_id
-    callback_id = callback.message.message_id
-    person = callback.from_user.id
-    target = CACHE[person]
+    callback_id: int = callback.message.message_id
+    person: int = callback.from_user.id
+    price: decimal = await check_price(discipline, type_name)
+    target: dict[str | int, list[int, str]] = CACHE[person]
     while callback_id not in target:
         callback_id -= 1
     await changer_data(
@@ -190,14 +201,16 @@ async def buy(
         callback.from_user.id,
         int(callback.message.message_id)
     )
-    print(CACHE)
-    await callback.message.edit_text(
-        f"Заказ:\n - {discipline};\n - {type_name}"
+    text: str = "\n".join(
+        (
+            f"Товар:",
+            f"{markdown.hbold('Дисциплина')}: {discipline};",
+            f"{markdown.hbold('Вид работы')}: {type_name}",
+            f"{markdown.hbold('Цена')}: {price}",
+        )
     )
-    await dp.bot.edit_message_text(
-        text=f"Заказ:\n - {discipline};\n - {type_name}",
-        chat_id=callback.message.chat.id,
-        message_id=msg_id,
+    await callback.message.edit_text(
+        text=text,
         reply_markup=markup
     )
 
@@ -209,7 +222,7 @@ async def make_choice(
 ):
     if isinstance(message, types.Message):
         way: bool = await checker(
-            (obj := kwargs['target']["target"].name.upper()),
+            (obj := kwargs['target'].name.upper()),
             message.from_user.id
         )
         logger.info(
@@ -223,16 +236,16 @@ async def make_choice(
             await write_data(
                 user_id=user_id,
                 msg_id=msg_id,
-                target=kwargs['target']["target"].id,
+                target=kwargs['target'].id,
                 name=obj
             )
             markup: types.InlineKeyboardMarkup = await choice(obj, kwargs["msg_id"])
             await message.answer(
                 text='\n'.join(
                     (
-                        "Мои поздравление, мой друг. Такая есть5",
-                        f" - {obj};",
-                        # f" - {kwargs['target']['target'].lektor}.",
+                        "Мои поздравление, мой друг. Такая есть!",
+                        f"Предмет: {obj};",
+                        f"Преподаватель: {kwargs['target'].lektor}"
                     )
                 ),
                 reply_markup=markup
@@ -244,7 +257,7 @@ async def make_choice(
                     f'Если это тех. сбой, введи команду - {markdown.hcode("/clear")}'
                 )
             )
-            del_info_msg = await message.answer(text)
+            del_info_msg: types.Message = await message.answer(text)
             logger.info('Повторяющийся товар. Сработал Redis')
             time.sleep(3)
             await dp.bot.delete_message(
@@ -279,12 +292,16 @@ async def get_to_cart(
         msg_id: int
 ):
     logger.info(callback)
-    markup: types.InlineKeyboardMarkup = await type_keyboard(discipline, msg_id)
+    markup: types.InlineKeyboardMarkup = await type_keyboard(
+        discipline,
+        msg_id
+    )
     await dp.bot.edit_message_text(
         text='\n'.join(
             (
                 "Мои поздравление, мой друг. Такая есть!",
-                f" - {discipline};",
+                f"\t{markdown.hbold('Дисциплина')}: {discipline};",
+                f"\t{markdown.hbold('Лектор')}: {discipline};",
                 # f" - {kwargs['target']['target'].lektor}.",
             )
         ),
