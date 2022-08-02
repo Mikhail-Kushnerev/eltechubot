@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from aiogram import Dispatcher
 from aiogram.dispatcher import DEFAULT_RATE_LIMIT
@@ -44,9 +45,14 @@ class ThrottlingMiddleware(BaseMiddleware):
 
         delta = throttled.rate - throttled.delta
         if throttled.exceeded_count <= 2:
-            await message.answer("Не так быстро, пж")
+            del_info_msg = await message.answer("Не так быстро, пж")
+            for i in range(int(delta) + 1, -1, -1):
+                del_info_msg = await del_info_msg.edit_text(
+                    f"Не так быстро, пж\nПодожди {i} сек."
+                )
+                time.sleep(1)
+            await del_info_msg.delete()
 
-        await asyncio.sleep(delta)
         thr = await dispatcher.check_key(key)
         if thr.exceeded_count == throttled.exceeded_count:
             answer = await message.reply("Ещё раз")

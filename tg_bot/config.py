@@ -9,6 +9,8 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_ID')
 
+TOKEN_YOOMONEY = os.getenv('TOKEN_YOOMONEY')
+
 @dataclass
 class TgBot:
     token: str

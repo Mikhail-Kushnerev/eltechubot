@@ -1,13 +1,14 @@
-import os
 import redis
+import os
 
 from aiogram import Bot
 from aiogram import Dispatcher
 # from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from dotenv import load_dotenv
+from yoomoney import Client, Quickpay
 
-from tg_bot.config import load_config, Config
+from tg_bot.config import load_config, Config, TOKEN_YOOMONEY
 
 
 load_dotenv()
@@ -29,3 +30,5 @@ storage: RedisStorage2 = RedisStorage2(
     # db=0
 )
 dp: Dispatcher = Dispatcher(bot, storage=storage)
+
+client: Client = Client(TOKEN_YOOMONEY)

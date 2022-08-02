@@ -1,10 +1,6 @@
 from loader import redis_cli
 
-CACHE: dict[
-    int, dict[
-        str | int, list[tuple[bool, object] | int | str]
-    ]
-] = {}
+CACHE = {}
 
 
 async def write_data(**kwargs) -> None:
@@ -15,17 +11,17 @@ async def write_data(**kwargs) -> None:
         "target": kwargs["target"]
     }
     if user_id not in CACHE:
-        CACHE.setdefault(user_id, {"cart": []})
+        CACHE.setdefault(user_id, {"cart": {}})
     CACHE[user_id].update(
         {
             obj["id"]: [obj["target"], obj["name"]]
         }
     )
-    print(CACHE)
+    # print(CACHE)
 
 
 async def changer_data(id_: int, person: int, id_1: int) -> None:
-    print(CACHE, id_, id_1)
+    # print(CACHE, id_, id_1)
     if len(CACHE[person][int(id_)]) == 2:
         CACHE[person][int(id_)].insert(1, id_1)
 

@@ -64,11 +64,14 @@ def add_user(
 
 @sync_to_async
 def get_product(name: str):
-    item: Discipline = get_object_or_404(
-        Discipline,
-        name=name
-    )
-    return item
+    try:
+        item: Discipline = get_object_or_404(
+            Discipline,
+            name=name
+        )
+        return item
+    except Exception:
+        return False
 
 
 @sync_to_async
@@ -92,7 +95,7 @@ def get_types(name: str) -> Purchace:
 
 @sync_to_async
 def get_item(dis: int, type_name: Type) -> Product:
-    print(dis, type_name)
+    # print(dis, type_name)
     target: Product = get_object_or_404(
         Product,
         discipline=dis,
@@ -124,7 +127,6 @@ def check_price(
 
 @sync_to_async
 def packing(person: int, cart: list[Product]) -> decimal:
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     user: Student = get_object_or_404(
         Student,
         id_user=person
@@ -132,14 +134,42 @@ def packing(person: int, cart: list[Product]) -> decimal:
     obj: Purchace = Purchace.objects.create(
         buyer_id=user.id
     )
-    print(f"{cart=}\n{user=}\t{obj=}\n{user.id=}\t{obj.id=}")
+    # print(f"{cart=}\n{user=}\t{obj=}\n{user.id=}\t{obj.id=}")
     for item in cart:
-        print(item)
         ProductPurchase.objects.create(
             purchase=obj,
             product=item
         )
-        print("-----------------------------------")
         obj.amount += item.price
         obj.save()
-    return obj.amount
+    return obj
+
+
+@sync_to_async
+def del_packing(person: int, item) -> decimal:
+    user: Student = get_object_or_404(
+        Student,
+        id_user=person
+    )
+    obj: Purchace = Purchace.objects.filter(
+        buyer_id=user.id
+    ).last()
+    ProductPurchase.objects.get(
+        purchase=obj,
+        product=item
+    ).delete()
+    obj.amount -= item.price
+    obj.save()
+    return obj
+
+
+@sync_to_async
+def get_purchase_for_pay(user_id: int) -> Purchace:
+    user: Student = get_object_or_404(
+        Student,
+        id_user=user_id
+    )
+    purchace: Purchace = Purchace.objects.filter(
+        buyer_id=user.id
+    ).last()
+    return purchace

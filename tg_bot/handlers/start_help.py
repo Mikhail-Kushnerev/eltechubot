@@ -1,14 +1,17 @@
+import os
+
 from aiogram import types
 from aiogram.utils.markdown import hbold
-from aiogram.dispatcher.filters import Text
+from dotenv import load_dotenv
 
 from tg_bot.keyboards.reply import pay_button
 from tg_bot.misc.logger import logger
 
 from loader import dp
-from tg_bot.misc import rate_limit
 from tg_bot.services.db_api.db_commands import add_user
 
+
+load_dotenv()
 
 # @rate_limit(limit=5, key="/start")
 @dp.message_handler(commands=["start", "help"])
@@ -44,6 +47,16 @@ async def get_help(message: types.Message):
     )
 
 
-@dp.message_handler(Text(equals=("Выбор дисциплины",)))
-async def get_item(message):
-    await message.answer("Введи интересующую тебя дисциплину. Возможно, она у меня есть")
+@dp.message_handler(commands="donats")
+async def donat(message):
+    text: str = "Поддержать проект чеканной монетой"
+    markup: types.InlineKeyboardMarkup = types.InlineKeyboardMarkup()
+    markup.insert(types.InlineKeyboardButton(
+            text="Сбор средств",
+            url=os.getenv("DONATE_URL")
+        )
+    )
+    await message.answer(
+        text=text,
+        reply_markup=markup
+    )
